@@ -2622,8 +2622,8 @@ function wireCustomersModal(){
 function wireSettingsModal(){
   $$('#settingsModal .tabs button').forEach(b=>b.addEventListener('click',()=>{
     $$('#settingsModal .tabs button').forEach(x=>x.classList.toggle('active', x===b));
-    ['setCompany','setBackup','setKeys','setAbout'].forEach(t=>{
-      $('#tab-'+t).style.display = (b.dataset.tab===t)?'':'none';
+    ['setCompany','setCloud','setBackup','setKeys','setAbout'].forEach(t=>{
+      const el=$('#tab-'+t); if(el) el.style.display = (b.dataset.tab===t)?'':'none';
     });
   }));
   $('#themeToggle').addEventListener('click',()=>{
