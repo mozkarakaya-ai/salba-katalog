@@ -649,9 +649,27 @@ kbd{background:var(--surface2);border:1px solid var(--line2);border-radius:3px;p
   <div class="body">
     <div class="tabs">
       <button class="active" data-tab="setCompany">🏢 Firma</button>
+      <button data-tab="setCloud">☁️ Bulut</button>
       <button data-tab="setBackup">📦 Yedek</button>
       <button data-tab="setKeys">⌨️ Kısayollar</button>
       <button data-tab="setAbout">ℹ️ Hakkında</button>
+    </div>
+    <div id="tab-setCloud" style="display:none">
+      <p class="muted" style="margin-top:0">Müşteri ve teklif kayıtlarınız Firebase (Google) üzerinden cihazlarınız arasında eşitlenir.
+      Kurulum bir kez yapılır: <b>console.firebase.google.com</b> → proje oluştur → Authentication'da E-posta/Şifre yöntemini açıp kendinize kullanıcı ekleyin →
+      Firestore Database oluşturun → Proje ayarlarından web uygulaması ekleyip çıkan <code>firebaseConfig</code> bloğunu aşağıya yapıştırın.</p>
+      <label class="field"><span>Firebase Yapılandırması (firebaseConfig { ... } bloğu)</span>
+        <textarea id="fbConfig" rows="5" style="font-family:ui-monospace,monospace;font-size:11.5px" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", ... }'></textarea></label>
+      <div class="settings-grid">
+        <label class="field"><span>E-posta (Firebase kullanıcısı)</span><input id="fbEmail" type="email" autocomplete="off"></label>
+        <label class="field"><span>Şifre (kaydedilmez — oturum tarayıcıda kalır)</span><input id="fbPass" type="password" autocomplete="new-password"></label>
+      </div>
+      <div class="flex" style="margin:8px 0">
+        <button class="btn primary" id="btnCloudConnect" type="button">🔗 Bağlan</button>
+        <button class="btn outline" id="btnCloudSync" type="button">🔄 Şimdi Eşitle</button>
+        <span id="cloudStatus" class="muted">Bağlı değil</span>
+      </div>
+      <p class="muted">Not: Silinen kayıtlar buluttan da silinir. Eşitleme; teklif/müşteri kaydettiğinizde otomatik, ayrıca uygulama açılışında yapılır.</p>
     </div>
     <div id="tab-setCompany">
       <p class="muted">Bu bilgiler PDF/yazdırma çıktısında "Hazırlayan" bölümünde gözükür.</p>
@@ -816,6 +834,7 @@ let appSettings={
   markup:50,      // liste → satış kâr marjı %
   defLineDisc:20, // teklif hazırlarken satır başına varsayılan iskonto %
   terms:'', // boşsa DEFAULT_TERMS basılır
+  fbConfig:'', fbEmail:'', // ☁ Firebase bulut eşitleme (şifre asla saklanmaz)
 };
 const DEFAULT_TERMS =
 '1. Fiyatlarımız KDV hariç olup KDV (%10) tabloda ayrıca gösterilmiştir.\n'+
@@ -1900,7 +1919,7 @@ async function renderCustomerList(){
     const btns=d.querySelectorAll('button');
     btns[0].addEventListener('click',()=>{applyCustomer(c);closeModal('customersModal');toast('Müşteri seçildi','ok');});
     btns[1].addEventListener('click',()=>openCustomerEditor(c));
-    btns[2].addEventListener('click',async()=>{if(confirm((c.name||'')+' silinsin mi?')){await idbDel('customers',c.id);renderCustomerList();refreshCustomersCache();toast('Silindi');}});
+    btns[2].addEventListener('click',async()=>{if(confirm((c.name||'')+' silinsin mi?')){await idbDel('customers',c.id);cloudDeleteDoc('customers',c);renderCustomerList();refreshCustomersCache();toast('Silindi');}});
     wrap.appendChild(d);
   });
 }
@@ -1923,8 +1942,14 @@ async function saveCustomerFromForm(){
     sector:$('#cAddSector').value.trim(), phone:$('#cAddPhone').value.trim(), email:$('#cAddEmail').value.trim(),
     address:$('#cAddAddr').value.trim(), taxOffice:$('#cAddTaxOffice').value.trim(),
     tax:$('#cAddTax').value.trim(), notes:$('#cAddNotes').value.trim(), ts:Date.now()};
-  if(editId)data.id=+editId;
-  const id=await idbPut('customers',data); data.id=id; return data;
+  if(editId){
+    data.id=+editId;
+    try{ const prev=await idbGet('customers',data.id); if(prev&&prev.guid) data.guid=prev.guid; }catch(e){}
+  }
+  if(!data.guid) data.guid=guidNew();
+  const id=await idbPut('customers',data); data.id=id;
+  cloudPush('customers', data);
+  return data;
 }
 function applyCustomer(c){
   currentCustomerId=(c&&c.id)||null;
@@ -1990,9 +2015,13 @@ async function saveQuote(){
     ts: Date.now(),
   };
   if(currentQuoteId) data.id=currentQuoteId;
+  // bulut eşitleme kimliği: mevcut teklifin guid'i korunur
+  if(currentQuoteId){ try{ const prev=await idbGet('quotes',currentQuoteId); if(prev&&prev.guid) data.guid=prev.guid; }catch(e){} }
+  if(!data.guid) data.guid=guidNew();
   try{
     const id=await idbPut('quotes',data);
     if(!currentQuoteId) currentQuoteId=id;
+    cloudPush('quotes', data);
     $('#qnum').value=data.num;
     $('#qTitle').textContent=data.num+' · '+data.customer.name+(data.project?' · 📁 '+data.project:'');
     toast('✓ Teklif kaydedildi','ok');
@@ -2072,7 +2101,7 @@ async function showSaved(){
         const btns=d.querySelectorAll('button');
         btns[0].addEventListener('click',()=>loadQuote(qq.id));
         btns[1].addEventListener('click',()=>duplicateQuote(qq.id));
-        btns[2].addEventListener('click',async e=>{e.stopPropagation();if(confirm('Bu teklif silinsin mi?')){await idbDel('quotes',qq.id);showSaved();toast('Silindi');}});
+        btns[2].addEventListener('click',async e=>{e.stopPropagation();if(confirm('Bu teklif silinsin mi?')){await idbDel('quotes',qq.id);cloudDeleteDoc('quotes',qq);showSaved();toast('Silindi');}});
         list.appendChild(d);
       }
     }
@@ -2328,6 +2357,112 @@ async function clearImageCache(){
   renderGrid(); renderCart(); updateHeaderStats();
 }
 
+/* ===== ☁ Firebase bulut eşitleme (yalnızca yönetici) ===== */
+let fbAuth=null, fbDB=null, cloudReady=false;
+function cloudStatusMsg(msg, ok){ const el=$('#cloudStatus'); if(el){ el.textContent=msg; el.style.color=ok?'var(--ok)':'var(--muted)'; } }
+function loadFirebaseSDK(){
+  if(window.firebase && window.firebase.firestore) return Promise.resolve();
+  const urls=[
+    'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',
+    'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js'];
+  return urls.reduce((pr,u)=>pr.then(()=>new Promise((res,rej)=>{
+    const s=document.createElement('script'); s.src=u; s.onload=res;
+    s.onerror=()=>rej(new Error('Firebase SDK yüklenemedi (internet?)')); document.head.appendChild(s);
+  })), Promise.resolve());
+}
+function parseFbConfig(raw){
+  raw=String(raw||appSettings.fbConfig||'').trim();
+  if(!raw) return null;
+  try{ const m=raw.match(/\{[\s\S]*\}/); if(m) raw=m[0]; return Function('return ('+raw+')')(); }
+  catch(e){ return null; }
+}
+function guidNew(){ return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():('g'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)); }
+function slimQuoteForCloud(q){
+  const c=JSON.parse(JSON.stringify(q));
+  (c.cart||[]).forEach(it=>{ if(it.img && String(it.img).startsWith('data:')) it.img=null; });
+  return c;
+}
+function rehydrateQuote(q){
+  (q.cart||[]).forEach(it=>{ if(!it.img && it.pIdx>=0 && P[it.pIdx]) it.img=P[it.pIdx].img||null; });
+  return q;
+}
+async function cloudPush(col, obj){
+  if(!cloudReady||!fbDB||!obj) return;
+  try{
+    if(!obj.guid){ obj.guid=guidNew(); if(obj.id!=null) await idbPut(col,obj); }
+    const data=(col==='quotes')?slimQuoteForCloud(obj):JSON.parse(JSON.stringify(obj));
+    delete data.id;   // yerel id cihaza özeldir
+    await fbDB.collection(col).doc(obj.guid).set(data);
+  }catch(e){ console.warn('cloudPush', e); }
+}
+async function cloudDeleteDoc(col, obj){
+  if(!cloudReady||!fbDB||!obj||!obj.guid) return;
+  try{ await fbDB.collection(col).doc(obj.guid).delete(); }catch(e){ console.warn('cloudDelete', e); }
+}
+async function cloudSync(){
+  if(!cloudReady||!fbDB) return;
+  let pulled=0, pushed=0;
+  for(const col of ['customers','quotes']){
+    const localAll=await idbAll(col);
+    const byGuid={}; localAll.forEach(x=>{ if(x.guid) byGuid[x.guid]=x; });
+    const snap=await fbDB.collection(col).get();
+    const remoteGuids=new Set();
+    for(const doc of snap.docs){
+      const r=doc.data(); r.guid=doc.id; remoteGuids.add(doc.id);
+      const l=byGuid[r.guid];
+      if(!l){ const obj=(col==='quotes')?rehydrateQuote(r):r; delete obj.id; await idbPut(col,obj); pulled++; }
+      else if((r.ts||0)>(l.ts||0)){ const obj=(col==='quotes')?rehydrateQuote(r):r; obj.id=l.id; await idbPut(col,obj); pulled++; }
+      else if((l.ts||0)>(r.ts||0)){ await cloudPush(col,l); pushed++; }
+    }
+    for(const x of localAll){
+      if(!x.guid || !remoteGuids.has(x.guid)){ await cloudPush(col,x); pushed++; }
+    }
+  }
+  await refreshCustomersCache();
+  return {pulled, pushed};
+}
+async function cloudBoot(){   // açılışta: kayıtlı oturum varsa sessizce bağlan + eşitle
+  if(VISITOR) return;
+  const cfg=parseFbConfig(); if(!cfg) return;
+  try{
+    await loadFirebaseSDK();
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    fbAuth=firebase.auth(); fbDB=firebase.firestore();
+    fbAuth.onAuthStateChanged(async u=>{
+      if(u){
+        cloudReady=true;
+        try{ const r=await cloudSync(); cloudStatusMsg('☁ Bağlı: '+(u.email||'')+' · eşitlendi ('+((r&&r.pulled)||0)+' alındı / '+((r&&r.pushed)||0)+' gönderildi)', true); }
+        catch(e){ cloudStatusMsg('Eşitleme hatası: '+e.message); }
+      } else { cloudReady=false; cloudStatusMsg('Bağlı değil — Ayarlar → Bulut sekmesinden bağlanın'); }
+    });
+  }catch(e){ cloudStatusMsg('Bulut başlatılamadı: '+e.message); }
+}
+async function cloudConnect(){
+  const raw=$('#fbConfig')?$('#fbConfig').value:'';
+  const cfg=parseFbConfig(raw);
+  if(!cfg||!cfg.apiKey){ toast('Geçerli bir firebaseConfig yapıştırın','warn'); return; }
+  const em=($('#fbEmail')&&$('#fbEmail').value.trim())||'', pw=($('#fbPass')&&$('#fbPass').value)||'';
+  if(!em||!pw){ toast('E-posta ve şifre girin','warn'); return; }
+  try{
+    cloudStatusMsg('Bağlanılıyor…');
+    await loadFirebaseSDK();
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    fbAuth=firebase.auth(); fbDB=firebase.firestore();
+    await fbAuth.signInWithEmailAndPassword(em, pw);
+    appSettings.fbConfig=raw; appSettings.fbEmail=em;
+    await idbPut('settings',{key:'app',value:appSettings});
+    if($('#fbPass')) $('#fbPass').value='';   // şifre asla saklanmaz
+    cloudReady=true;
+    const r=await cloudSync();
+    cloudStatusMsg('☁ Bağlı: '+em+' · eşitlendi ('+((r&&r.pulled)||0)+' alındı / '+((r&&r.pushed)||0)+' gönderildi)', true);
+    toast('☁ Bulut bağlandı ve eşitlendi','ok');
+  }catch(e){
+    cloudStatusMsg('Hata: '+(e.code||e.message||e));
+    toast('Bulut bağlantı hatası: '+(e.code||e.message),'err',4500);
+  }
+}
+
 /* ===== Settings ===== */
 async function loadSettings(){
   try{
@@ -2351,6 +2486,8 @@ async function saveSettings(){
     preparer:$('#setCompPreparer').value,
     defVat:+$('#setDefVat').value||10, defDisc:+$('#setDefDisc').value||0,
     terms: $('#setTerms') ? $('#setTerms').value : (appSettings.terms||''),
+    fbConfig: $('#fbConfig') ? $('#fbConfig').value : (appSettings.fbConfig||''),
+    fbEmail: $('#fbEmail') ? $('#fbEmail').value.trim() : (appSettings.fbEmail||''),
     markup: $('#setMarkup') ? Math.max(0,+$('#setMarkup').value||0) : (+appSettings.markup||0),
     defLineDisc: $('#setDefLineDisc') ? Math.min(100,Math.max(0,+$('#setDefLineDisc').value||0)) : (+appSettings.defLineDisc||0),
     theme:appSettings.theme,
@@ -2373,6 +2510,8 @@ function fillSettingsForm(){
   $('#setCompPreparer').value=appSettings.preparer||'';
   $('#setDefVat').value=appSettings.defVat||10;
   if($('#setTerms')) $('#setTerms').value=(appSettings.terms&&appSettings.terms.trim())?appSettings.terms:DEFAULT_TERMS;
+  if($('#fbConfig')) $('#fbConfig').value=appSettings.fbConfig||'';
+  if($('#fbEmail')) $('#fbEmail').value=appSettings.fbEmail||'';
   $('#setDefDisc').value=appSettings.defDisc||0;
   if($('#setMarkup')) $('#setMarkup').value=(appSettings.markup!=null?appSettings.markup:50);
   if($('#setDefLineDisc')) $('#setDefLineDisc').value=(appSettings.defLineDisc!=null?appSettings.defLineDisc:20);
@@ -2492,6 +2631,13 @@ function wireSettingsModal(){
     applyTheme();
   });
   $('#btnSaveSettings').addEventListener('click', saveSettings);
+  const bcc=$('#btnCloudConnect'); if(bcc) bcc.addEventListener('click', cloudConnect);
+  const bcs=$('#btnCloudSync'); if(bcs) bcs.addEventListener('click', async()=>{
+    if(!cloudReady){ toast('Önce bulut bağlantısı kurun','warn'); return; }
+    cloudStatusMsg('Eşitleniyor…');
+    try{ const r=await cloudSync(); cloudStatusMsg('☁ Eşitlendi: '+((r&&r.pulled)||0)+' alındı / '+((r&&r.pushed)||0)+' gönderildi · '+new Date().toLocaleTimeString('tr-TR'), true); toast('Eşitleme tamam','ok'); }
+    catch(e){ cloudStatusMsg('Hata: '+e.message); toast('Eşitleme hatası: '+e.message,'err'); }
+  });
   $('#btnExport').addEventListener('click', exportAll);
   $('#btnImport').addEventListener('click', ()=>$('#importFile').click());
   $('#importFile').addEventListener('change', e=>{
@@ -2738,6 +2884,7 @@ async function boot(){
     try{await openDB();await preloadCachedSet();await refreshCustomersCache();await loadSettings();}
     catch(e){console.warn('DB:',e);toast('DB hatası: '+e.message,'warn');}
     renderGrid(); renderCart();
+    cloudBoot();   // ☁ kayıtlı bulut oturumu varsa sessizce bağlan + eşitle
     $('#qdate').value=new Date().toISOString().slice(0,10);
     $('#disc').value=appSettings.defDisc;
     $('#vat').value=appSettings.defVat;
@@ -2857,8 +3004,13 @@ async function boot(){
       const name=$('#cust').value.trim();
       if(!name){toast('Önce müşteri adı girin','warn');return;}
       const data={name,company:$('#custCompany').value.trim(),phone:$('#custPhone').value.trim(),email:$('#custEmail').value.trim(),ts:Date.now()};
-      if(currentCustomerId)data.id=currentCustomerId;
+      if(currentCustomerId){
+        data.id=currentCustomerId;
+        try{ const prev=await idbGet('customers',currentCustomerId); if(prev&&prev.guid) data.guid=prev.guid; }catch(e){}
+      }
+      if(!data.guid) data.guid=guidNew();
       const id=await idbPut('customers',data); currentCustomerId=id;
+      cloudPush('customers', data);
       await refreshCustomersCache();
       toast('Müşteri kaydedildi','ok');
     });
