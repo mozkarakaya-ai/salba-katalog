@@ -956,16 +956,18 @@ function buildOrderText(){
   if(ph)L.push('📞 '+ph);
   if(pj)L.push('📁 Proje: '+pj);
   L.push('──────────────');
-  let no=0, sub=0, sec='';
+  let no=0, sub=0, sec='', secSum=0;
+  const flushSec=()=>{ if(sec&&secSum>0)L.push('   ↳ '+sec+' ara toplamı: '+fmt(secSum)); secSum=0; };
   for(const it of cart){
-    if(it.kind==='section'){sec=(it.title||'').trim(); if(sec)L.push('📂 '+sec); continue;}
+    if(it.kind==='section'){flushSec(); sec=(it.title||'').trim(); if(sec)L.push('📂 '+sec); continue;}
     no++;
     const opts=[...(it.parts||[]).map(p=>p.value),...(it.specs||[]).map(s=>s.value)].filter(Boolean).join(', ');
-    const lt=it.qty*it.price*(1-(it.lineDisc||0)/100); sub+=lt;
+    const lt=it.qty*it.price*(1-(it.lineDisc||0)/100); sub+=lt; secSum+=lt;
     const bc=(it.pIdx>=0 && P[it.pIdx]) ? (BRAND_CODE[P[it.pIdx].b]||'') : '';
     L.push(no+') '+(bc?'['+bc+'] ':'')+it.t+(opts?' — '+opts:'')+' | '+it.qty+' adet × '+fmt(it.price)+' = '+fmt(lt));
     const nt=(it.note||'').trim(); if(nt)L.push('   ℹ️ '+nt.replace(/\n/g,' / '));
   }
+  flushSec();
   const vat=+($('#vat')&&$('#vat').value)||10;
   L.push('──────────────');
   L.push('Ara Toplam: '+fmt(sub));
@@ -1894,6 +1896,48 @@ function addMatrixRow(i){
   toast('Sepete eklendi: '+p.t+(o.l?' — '+o.l:''),'ok');
 }
 
+/* ===== Bölüm (mahal) taşıma & ara toplamları ===== */
+function moveSectionBlock(cid, dir){
+  // bölüm + altındaki ürünler tek blok olarak taşınır
+  const blocks=[]; let cur={sec:null, items:[]};
+  for(const it of cart){
+    if(it.kind==='section'){ blocks.push(cur); cur={sec:it, items:[]}; }
+    else cur.items.push(it);
+  }
+  blocks.push(cur);
+  const idx=blocks.findIndex(b=>b.sec && b.sec.cid===cid);
+  const j=idx+dir;
+  if(idx<1 || j<1 || j>=blocks.length) return;   // 0. blok: bölümsüz baş kısım, yerinde kalır
+  [blocks[idx], blocks[j]]=[blocks[j], blocks[idx]];
+  cart=[];
+  for(const b of blocks){ if(b.sec) cart.push(b.sec); cart.push(...b.items); }
+  renderCart();
+}
+function moveCartItem(cid, dir){
+  const i=cart.findIndex(x=>x.cid===cid);
+  if(i<0) return;
+  const j=i+dir;
+  if(j<0 || j>=cart.length) return;
+  const [x]=cart.splice(i,1); cart.splice(j,0,x);
+  renderCart();
+}
+function sectionTotals(){
+  // {cid: netToplam} — satır iskontoları düşülmüş
+  const out={}; let cur=null;
+  for(const it of cart){
+    if(it.kind==='section'){ cur=it.cid; out[cur]=0; continue; }
+    if(cur!=null) out[cur]+=it.qty*it.price*(1-(it.lineDisc||0)/100);
+  }
+  return out;
+}
+function updateSectionTotals(){
+  const t=sectionTotals();
+  document.querySelectorAll('[data-sectot]').forEach(el=>{
+    const v=t[+el.dataset.sectot];
+    el.textContent=(v&&v>0)?('Ara toplam: '+fmt(v)):'';
+  });
+}
+
 /* ===== Cart ===== */
 function renderCart(){
   const wrap=$('#qitems');
@@ -1906,11 +1950,16 @@ function renderCart(){
   for(const it of cart){
     if(it.kind==='section'){
       const sec=document.createElement('div'); sec.className='cart-section'; sec.dataset.cid=it.cid;
-      sec.innerHTML='📂 <input value="'+esc(it.title||'')+'" placeholder="Bölüm adı yazın… (örn. Yönetici Ofisi, Toplantı Salonu)"><button class="rm" title="Bölümü kaldır">×</button>';
+      sec.innerHTML='📂 <input value="'+esc(it.title||'')+'" placeholder="Bölüm adı yazın… (örn. Müdür Odası, Toplantı Salonu)">'+
+        '<span class="sectot" data-sectot="'+it.cid+'" style="font-size:12.5px;font-weight:700;color:var(--brand);white-space:nowrap"></span>'+
+        '<button class="mv" data-dir="-1" title="Bölümü (içindekilerle) yukarı taşı" style="background:transparent;border:1px solid var(--line2);border-radius:4px;cursor:pointer;padding:2px 7px;color:var(--ink2)">▲</button>'+
+        '<button class="mv" data-dir="1" title="Bölümü (içindekilerle) aşağı taşı" style="background:transparent;border:1px solid var(--line2);border-radius:4px;cursor:pointer;padding:2px 7px;color:var(--ink2)">▼</button>'+
+        '<button class="rm" title="Bölüm başlığını kaldır (ürünler kalır)">×</button>';
       const inp=sec.querySelector('input');
       inp.addEventListener('input',e=>{it.title=e.target.value;});
       inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
       inp.addEventListener('click',e=>e.stopPropagation());
+      sec.querySelectorAll('.mv').forEach(b=>b.addEventListener('click',()=>moveSectionBlock(it.cid,+b.dataset.dir)));
       sec.querySelector('.rm').addEventListener('click',()=>{cart=cart.filter(x=>x.cid!==it.cid);renderCart();});
       wrap.appendChild(sec);
       if(it.autoFocus){delete it.autoFocus; setTimeout(()=>inp.focus(),50);}
@@ -1953,7 +2002,12 @@ function renderCart(){
       '</div>'+
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">'+
         '<div class="lt">'+fmt(lineTotal)+'</div>'+
+        '<div style="display:flex;gap:3px">'+
+          '<button class="mvi" data-dir="-1" title="Yukarı taşı (bölümler arası geçer)" type="button" style="background:transparent;border:1px solid var(--line2);border-radius:4px;cursor:pointer;padding:1px 6px;font-size:11px;color:var(--ink2)">▲</button>'+
+          '<button class="mvi" data-dir="1" title="Aşağı taşı (bölümler arası geçer)" type="button" style="background:transparent;border:1px solid var(--line2);border-radius:4px;cursor:pointer;padding:1px 6px;font-size:11px;color:var(--ink2)">▼</button>'+
+        '</div>'+
         '<button class="rm" title="Kaldır" type="button">×</button></div>';
+    row.querySelectorAll('.mvi').forEach(b=>b.addEventListener('click',()=>moveCartItem(it.cid,+b.dataset.dir)));
     row.querySelector('.rm').addEventListener('click',()=>{cart=cart.filter(x=>x.cid!==it.cid);renderCart();renderGrid();});
     row.querySelector('img').addEventListener('click',()=>{
       const p = it.pIdx>=0 ? P[it.pIdx] : null;
@@ -2013,6 +2067,7 @@ function updateTotals(){
   const disc=+$('#disc').value||0, vat=+$('#vat').value||0;
   const after=sub*(1-disc/100), total=after*(1+vat/100);
   $('#subt').textContent=fmt(sub); $('#grand').textContent=fmt(total);
+  updateSectionTotals();
   // USD karşılığı
   const eq=$('#usdEq'); const r=+(appSettings.usdRate||0);
   if(eq){
@@ -2303,9 +2358,20 @@ async function buildPrintHTML(){
   const hasDisc = cart.some(c=>c.kind!=='section' && (c.lineDisc||0)>0);
   const nCols = hasDisc ? 7 : 6;
   let sub=0, brut=0, rows=[]; let rowNo=0;
+  // bölüm (mahal) ara toplamı takibi
+  let secTitle=null, secSum=0, secN=0;
+  const flushSection=()=>{
+    if(secTitle!=null && secN>0){
+      rows.push('<tr><td colspan="'+(nCols-1)+'" style="text-align:right;background:#f5f7fb;font-weight:700;color:#0a4d8c;padding:6px 8px;font-size:11.5px;border-bottom:2px solid #d1d9e6">'+esc(secTitle||'Bölüm')+' Ara Toplamı ('+secN+' kalem)</td>'+
+        '<td style="text-align:right;background:#f5f7fb;font-weight:700;color:#0a4d8c;white-space:nowrap;border-bottom:2px solid #d1d9e6">'+fmt(secSum,cur)+'</td></tr>');
+    }
+    secTitle=null; secSum=0; secN=0;
+  };
   for(let i=0;i<cart.length;i++){
     const it=cart[i];
     if(it.kind==='section'){
+      flushSection();
+      secTitle=it.title||'Bölüm'; secSum=0; secN=0;
       rows.push('<tr><td colspan="'+nCols+'" style="background:#eef3fb;font-weight:700;color:#0a4d8c;padding:6px 8px;font-size:12px">📂 '+esc(it.title||'Bölüm')+'</td></tr>');
       continue;
     }
@@ -2316,6 +2382,7 @@ async function buildPrintHTML(){
     const lineGross = it.qty*it.price;
     const lineNet = lineGross*(1-ld/100);
     brut+=lineGross; sub+=lineNet;
+    if(secTitle!=null){ secSum+=lineNet; secN++; }
     let opts='';
     if(it.parts && it.parts.length) opts += it.parts.map(p=>{
       const noisy = partLabelNoise.test(p.label||'');
@@ -2351,6 +2418,7 @@ async function buildPrintHTML(){
           : '—')+'</td>':'')+
       '<td style="text-align:right;white-space:nowrap">'+tutarCell+'</td></tr>');
   }
+  flushSection();   // son bölümün ara toplamı
   const after=sub*(1-disc/100), total=after*(1+vat/100);
   let custLines=[];
   if(custCo)custLines.push(esc(custCo));
