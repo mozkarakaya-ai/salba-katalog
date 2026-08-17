@@ -1014,15 +1014,32 @@ async function buildQuotePdfBlob(){
     '</style><div class="qp">'+await buildPrintHTML()+'</div>';
   document.body.appendChild(host);
   try{
-    // uzak (http) fotoğrafları veriye çevir; çevrilemeyeni çıkar (canvas kirlenmesin)
+    // uzak (http) fotoğrafları veriye çevir: önbellek → doğrudan → CORS vekilleri.
+    // Tedarikçi siteleri dış çağrıya izin vermediği için vekil şart; hiçbiri olmazsa görsel düşer.
+    const PROXIES=['', 'https://corsproxy.io/?', 'https://api.allorigins.win/raw?url=', 'https://api.codetabs.com/v1/proxy?quest='];
+    const blobToData=(b)=>new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b);});
     await Promise.all([...host.querySelectorAll('img')].map(async im=>{
       const src=im.getAttribute('src')||'';
       if(!src || src.startsWith('data:')) return;
-      try{
-        const r=await fetch(src,{mode:'cors'}); if(!r.ok) throw 0;
-        const b=await r.blob();
-        im.src=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b);});
-      }catch(e){ im.remove(); }
+      // blob: (offline önbellekten çözülmüş) → data'ya çevir
+      if(src.startsWith('blob:')){
+        try{ const b=await (await fetch(src)).blob(); im.src=await blobToData(b); return; }catch(e){}
+      }
+      // uygulama içi offline önbellekte varsa oradan al
+      if(cachedSet.has(src)){
+        try{ const row=await idbGet('images',src); if(row&&row.blob){ im.src=await blobToData(row.blob); return; } }catch(e){}
+      }
+      for(const px of PROXIES){
+        try{
+          const r=await fetch(px?px+encodeURIComponent(src):src,{mode:'cors'});
+          if(!r.ok) continue;
+          const b=await r.blob();
+          if(!b || !b.type || b.type.indexOf('image')!==0) continue;
+          im.src=await blobToData(b);
+          return;
+        }catch(e){}
+      }
+      im.remove();   // hiçbir yoldan alınamadı
     }));
     const canvas=await window.html2canvas(host,{scale:2,backgroundColor:'#ffffff',logging:false});
     const {jsPDF}=window.jspdf;
@@ -2178,17 +2195,28 @@ function showCustSuggest(){
 }
 
 /* ===== Quotes ===== */
+/* Proje adından kısa kod: "X AVM Ofis Katı" → XAVM (maks 8 karakter) */
+function projectCode(){
+  const p=($('#qproject')&&$('#qproject').value.trim())||'';
+  if(!p) return '';
+  const words=p.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü0-9 ]/g,'').split(/\s+/).filter(Boolean);
+  let code = words.length>=2 ? words.map(w=>w[0]).join('') : (words[0]||'');
+  code=code.replace(/İ/g,'I').replace(/ı/g,'i').toUpperCase()
+           .replace(/Ç/g,'C').replace(/Ğ/g,'G').replace(/Ö/g,'O').replace(/Ş/g,'S').replace(/Ü/g,'U');
+  return code.slice(0,8);
+}
 async function nextQuoteNum(){
   const y=new Date().getFullYear();
   let mx=0;
   try{
     const all=await idbAll('quotes');
     for(const q of all){
-      const m=/^TKL-(\d{4})-(\d+)$/.exec(q.num||'');
+      const m=/^TKL-(\d{4})-(\d+)/.exec(q.num||'');   // sonek (proje kodu) olsa da sayar
       if(m && +m[1]===y) mx=Math.max(mx, +m[2]);
     }
   }catch(e){}
-  return 'TKL-'+y+'-'+String(mx+1).padStart(3,'0');
+  const pc=projectCode();
+  return 'TKL-'+y+'-'+String(mx+1).padStart(3,'0')+(pc?'-'+pc:'');
 }
 async function fillAutoQuoteNum(force){
   const el=$('#qnum'); if(!el) return;
@@ -3220,6 +3248,12 @@ async function boot(){
     $('#cust').addEventListener('input',()=>{currentCustomerId=null;showCustSuggest();});
     $('#cust').addEventListener('input', debounce(updateProjectList,300));
     $('#qproject') && $('#qproject').addEventListener('focus', updateProjectList);
+    // Proje yazılınca otomatik teklif numarasının sonuna proje kodu eklenir (TKL-2026-004-XAVM)
+    $('#qproject') && $('#qproject').addEventListener('blur', ()=>{
+      const el=$('#qnum'); if(!el) return;
+      const m=/^(TKL-\d{4}-\d{3})(?:-[A-Z0-9]{1,8})?$/.exec(el.value.trim());
+      if(m){ const pc=projectCode(); el.value=m[1]+(pc?'-'+pc:''); }
+    });
     updateProjectList();
     $('#cust').addEventListener('focus', showCustSuggest);
     $('#cust').addEventListener('keydown', e=>{
