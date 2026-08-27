@@ -743,6 +743,13 @@ kbd{background:var(--surface2);border:1px solid var(--line2);border-radius:3px;p
     </div>
     <div id="tab-setCompany">
       <p class="muted">Bu bilgiler PDF/yazdırma çıktısında "Hazırlayan" bölümünde gözükür.</p>
+      <label class="field" style="background:var(--surface2);border:1px solid var(--line2);border-radius:8px;padding:10px 12px">
+        <span>🏢 Aktif Firma — antet, logo ve şehir buna göre değişir (iki firma da bizim)</span>
+        <select id="setFirm">
+          <option value="salba">SALBA — Konya</option>
+          <option value="nappa">NAPPA OFFICE — İstanbul</option>
+        </select>
+      </label>
       <div class="settings-grid">
         <label class="field"><span>Firma Adı</span><input id="setCompName"></label>
         <label class="field"><span>Slogan</span><input id="setCompSlogan"></label>
@@ -895,11 +902,19 @@ let cfgState={};
 let lbList=[], lbIdx=0, lbTitle='';
 let viewMode='normal';
 const DEFAULT_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPoAAAA3CAYAAAAlmldXAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAACqlJREFUeNrsXU1u4zYUZoMBuqznBFFOMAoKdJaxL9CRTxDnBLbXXdg5gZMTWDlBlLmANd1NgSLuCaIbVLOcRTHlcx4ThqEoUqJkyXkfQCRxLJIi38f3I/KJMQKBQCAQCAQCgdAD/NSnzn78+NuA/wgbbCL/+vWvbUP9HvC6M491Dgv+lflsp2IfOjkPbc5P1/CuB+Se8B+feIlaaO6Sl62HPsNiNOUFiBBIn++IyEvKyw0XrLRGMxvDPSxbmp5Ng/O+IzwviYexUusOpPkJNW1CW3e8zZg0evMEh8m4bViDv9AivJzwyc1r9nmNAmQDWFQuqmgv3taPIqLz+pYtzdGPFkUiwbGqMz+guRe8zCwvgUV5zttM+k70ow6T/L5FkgOuawpRiH12MWd316DVQjAjwrEKa87PzOGynbLh166I6M0ANPmgxfaA4Fc1Sb6p0ec1kd2aeGvUzK6KYyO7UY6Y8TrWRHT/PnnYcrOVtTkKXR2Sy2QPictWVtBiD4pjwucnIqL7w7Tl9mppc46VR+tjRTy21rBW2pl/b+ZRcThbE11BF6PupkmBoMg/ntvb1tDmIGxlJneG/f7GHp8emO5vCI+sfEaY9wS455uadZSNVWS5QC8c5ucDMz/dGeB8XxHR65ntRpJzAow7Nn5lJIeIrSwUS3z2bDIlwaLpPdE9RP6X6BdPDAvBlYUbaNLAr55QoAyuDYvMtI9E75rpPihZebuGcweS74Da2rRgRbZm6aGDj9UFulZNzE+sW4zwUefY0G7Q4Eaht0H0EpMV/LJlVwJWGJgpImSuI7lyn2kNS+EtYVtxfmBuTIS8NMyPMOerLCBEdA8TC/4WPEv9F8w6MM32qP2M2sLi+ptDEiR5kePlztNiWkZWE6YlbmCZhXhtWoj7FpTrItFtgjgiKAK+1AMfdCD/CrRsGxOAAhhVFBKhNeIS8zDqIcFBS56YrBnHMb6t4cpN6sgYmvDbQ7G6uhh1j3E1dtHUIZYZCgmYxV/APG4ogm2a5NThcETMindqnZeYj10CjPGF6b7R5YLF6wMrfxxpc3jpS4lbVdRG5rCl9RqVSZHFcEVEr+6n53yiIBhSZxPKEMuC1yUOKQji+zgVdV7TIpEFqYjou6BcD05UFe6tR+tqhuPl08XKSw6c+JofWBCK9kkEfXoU2sktsEjGEasXcZW1Q4QTBib+g+TfOy8kFkG42OE+M9bvoNzYQHIg+APGVXzHUeY13CqX+cnZgQTlurrXXZD9BP2+3GPVgeTfQ1Bv4/i45NyHEFlqmE4Lks4EhsUTxpT53TGomt5xxcUxqWAhHURQ7qjjggQacsnLe/7nKZLet6kEJN/YnFDyEYTT3GPMDiQoV/EEn/NCjdZC02a7rHB6H5Q76osQwYAj6cGkB+KPMRjiKxOJzQkl06SmNfzpqv5ml0gOmu22ATNdh4VOk5a4VVmNc+WmBXxKRG9W04MZBrvPTtHEv0DCZDWqLjuh5FVbWApS1BPz0PUYaFpSbOIubc1Pwnq+U+4dOwCgJo2FZkQTEgb/jLmnoFrpAjA+g3C6/uMjwaHBkujsoxzYscjKH4fluKDFNpaPRYahM9kS8hmE0ykWXn9isOjOWcfPJxyxAwSa+VdwCIYXSJc1Yvb54IKCbbafmhAiS43jYh6etUzywKJ/MD4n6HpllnOY4bwVzpODW5V4eEzZ66DcQRJdIzQpCtmp5N+bSB9p/M+JqxB8//xryMuGlx9Y7nmZFPQxdjQPiwR32PK24AUzR9dBg1fK9YbX2GpKk9l+VzA/gTI/D7wsi5QH63FQ7k0QXeffo09v7bubfE2dtuACA8RUI9C7I5D8f+sKloEqyCahazPtUVRG8pr1lx5iquJWwSKsmR+oYwELcgWtPiWidxMuWm/qYnJzQRER6MKFg38nqmkemg6ODHF/QKOavWSrKWjjec3618zuWXyVvQ2musMCzd7boFwng3GWmVvq4JeS+nOpL0PmHoSz2SwyZUrQzyUoB+3y75p2nUEdD9K+fx9QA2mmeABYHDPMlV4FZdtm7yRZcdrbgCQOLeZnqVqDfQ3KdTXqHjD3BIA+kVTVFqjNbRapocFCGBqET46+z0ssB9GOL02TKrGBsKV2TXPk7FYxu70JA/Dhf/7970yzcEwMVte8TtpwMt3bw5NwVAzCzTwIsJV5iLGGeI9jta8kIFcSgZ2enaPLVNmlsQjKdXInIxH9NeaKqdyEtmBFJl6FgxRz5m93oCv28UgJ7vVSihG4ulW2QbNco81tYilTInr3ob4eyTUI56ItbhwtBdk8HCgLw2jPmr1Nko8k09jVrQoc3InrilZX2MX8/ER0XL3Z45HLJ+EoC8IVaF3b1Tzm2iKuYR5OVCsAH2ONWTeTaPryyZ9IXvGA0cJhQTHl/CuzuqZE9O5pCJH+KHEwwRM14GKpLYCEc05ym2fLzuYh7v8X+/5NWqcvyFAzn+Iux7yqW4VB0jL/WaTDGvE5ymvMT9TXFz0QCAQCgUAgEAgEAoFAIBAIBAKBQCAQCARC3wAbefZ1HBLbXtIs9A/v3iBRxKuBXryuCd+lHbDHAxN5wVHZ3TVINB3ZxLVAhhjrC5Qdd0tN27vv4zFV0b8cP8sd7kkGpNNKDH1l2McJZN8xfK8wx5vYPajbUah8Bn2DPr54y6x0aGigGXcxHjP2ek992pc3pBDR9wfxqqcpF6ITFC4QRJGV5Zj/Dbuj7pFsQshBACHN8AgJAdspZWEDQYbz2SP8mbDnBJWx9D2xDTNVPkvx7PY9tgntfWLmvGliK6i4RvR1gH0d4+9F58YT6X+3yv3Ki0ERdPf34jMcW6gbdiHCPvBjyN6L3wVCi3z6x+xxR18gjQfsAJyx1weAMqIuEb0MAxSoNQplgoTKJIIJTX4qa1R4nZOk9VLMMS/+t5a06qVBGEFoz/n3xX52Qfwcf4efp1jX2uL9axNxjdJXIP8U+xij1h9oCHMpjQv8fcPcctQPFFfiWPn/QowVWi6wAF1iXwc4HpBEYoULrAwg+RX2aUBEJ6K7QpBa1rwJe3m+eqsxmzNJyyVI/EDRkMJqKNLEIlmEnDDiAuuOhLmOmUxA201ZeUomXV9zRePr9l6PsK+QKXeMpFzjdRmSsCyRQoh1qIuZaDtkz/n5Ymxjwl4eGhGfL9jrU33fcBzkxQQWBIoVOOAtH2oBYYxQGKGo6ZaCAmtAkGiDP8dImKTAx31BMExFfcKe3zLzHv1ZkX/t+vvnX2d//vFfgHVOLO4lNLQrrhf9lIvcr0TJkpuy55dTGhcZpU7ZjJ8y6Vw4WglwT+dK2zleV5SDbm5og0Aa3Yg7JIHwxVP2fCosRRNT/E8QJ0RtEklmZyiRLdeQQK1HCO43JEEukSLlBB8iuVL83u7tMYbXCZn6KnzebcELEYfS76uSBaMIuRJYHEqL5ERDStDYt5oz2+IV0itpMU1wXM40dRDZSaOXanKR8lm8tFHkHd8iKVL2+my3OLOeSPWIANwZXjvWtDFm+uOiGV4jTFzxJpMAr7/Bc+kxM6RsMvT1AjXpUzs6kjJzMsOUmdNi6+refYZE3jLlOCeOiXCTnq5HbS/u4xLv/YIITXiToOfoBDLd3wa2e247oykgEAgEAoFAIBAIhEbwvwADAF87C1RA2gE8AAAAAElFTkSuQmCC";
+const NAPPA_LOGO = "data:image/png;base64,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";
+/* İki firma tek sistem: SALBA (Konya) + NAPPA OFFICE (İstanbul) — irtibat aynı.
+   Ayarlar → Firma'dan seçilir; antet/logo/şehir/web otomatik değişir. */
+const FIRMS = {
+  salba: {company:'SALBA',        slogan:'Mobilya · Ofis · Hane', web:'www.salba.com.tr', city:'Konya',    logo:()=>DEFAULT_LOGO},
+  nappa: {company:'NAPPA OFFICE', slogan:'Ofis ve Kontrat Mobilyaları', web:'nappaoffice.com', city:'İstanbul', logo:()=>NAPPA_LOGO},
+};
 let appSettings={
+  firm:'salba',
   company:'SALBA', slogan:'Mobilya · Ofis · Hane',
   phone:'+90 506 856 02 45', email:'info@salba.com.tr',
   preparer:'',
-  addr:'', web:'www.salba.com.tr',
+  addr:'Konya', web:'www.salba.com.tr',
   logo: DEFAULT_LOGO,
   defVat:10, defDisc:0,
   theme:'light',
@@ -2599,6 +2614,7 @@ async function buildPrintHTML(){
   if(custPh)custLines.push('📞 '+esc(custPh));
   // E-posta TEKLİFTE GÖSTERİLMİYOR (kullanıcı isteği)
   let compLines=[];
+  if(appSettings.addr)compLines.push('📍 '+esc(appSettings.addr));
   if(appSettings.phone)compLines.push('📞 '+esc(appSettings.phone));
   if(appSettings.web)compLines.push('🌐 '+esc(appSettings.web));
   // E-posta firma tarafında da gizli; istenirse settings'ten açılır
@@ -2873,8 +2889,22 @@ async function loadSettings(){
   if(!appSettings.logo) appSettings.logo = DEFAULT_LOGO;
   applyTheme(); applyLogo();
 }
+/* Firma seçilince form alanları + logo o firmanın varsayılanlarına döner (Kaydet ile kalıcı olur) */
+function applyFirmDefaults(f){
+  const F=FIRMS[f]; if(!F) return;
+  $('#setCompName').value=F.company;
+  $('#setCompSlogan').value=F.slogan;
+  $('#setCompWeb').value=F.web;
+  const ad=$('#setCompAddr');
+  // adres alanı boşsa veya diğer firmanın şehriyse yeni şehri yaz (özel adres yazıldıysa dokunma)
+  const cities=Object.values(FIRMS).map(x=>x.city);
+  if(ad && (!ad.value.trim() || cities.includes(ad.value.trim()))) ad.value=F.city;
+  appSettings.logo=F.logo();
+  const sp=$('#setLogoPreview'); if(sp) sp.src=appSettings.logo;
+}
 async function saveSettings(){
   const newS = {
+    firm: $('#setFirm') ? $('#setFirm').value : (appSettings.firm||'salba'),
     company:$('#setCompName').value, slogan:$('#setCompSlogan').value,
     phone:$('#setCompPhone').value, email:$('#setCompEmail').value,
     addr:$('#setCompAddr').value, web:$('#setCompWeb').value,
@@ -2896,6 +2926,7 @@ async function saveSettings(){
   closeModal('settingsModal');
 }
 function fillSettingsForm(){
+  if($('#setFirm')) $('#setFirm').value=appSettings.firm||'salba';
   $('#setCompName').value=appSettings.company||'';
   $('#setCompSlogan').value=appSettings.slogan||'';
   $('#setCompPhone').value=appSettings.phone||'';
@@ -2987,7 +3018,7 @@ async function wipeAll(){
   await idbClear('quotes');
   await idbClear('settings');
   await refreshCustomersCache();
-  appSettings = {company:'SALBA',slogan:'Mobilya · Ofis · Hane',phone:'',email:'',addr:'',web:'www.salba.com.tr',defVat:10,defDisc:0,theme:'light',logo:DEFAULT_LOGO,terms:''};
+  appSettings = {firm:'salba',company:'SALBA',slogan:'Mobilya · Ofis · Hane',phone:'+90 506 856 02 45',email:'info@salba.com.tr',addr:'Konya',web:'www.salba.com.tr',defVat:10,defDisc:0,theme:'light',logo:DEFAULT_LOGO,terms:''};
   applyLogo();
   newQuote(true);
   toast('Tüm veriler silindi','warn',3500);
@@ -3053,9 +3084,16 @@ function wireSettingsModal(){
     reader.readAsDataURL(f);
   });
   $('#btnResetLogo').addEventListener('click', ()=>{
-    appSettings.logo = DEFAULT_LOGO;
-    $('#setLogoPreview').src = DEFAULT_LOGO;
-    toast('Varsayılan logo yüklendi','ok');
+    const F=FIRMS[($('#setFirm')&&$('#setFirm').value)||appSettings.firm||'salba'];
+    appSettings.logo = F?F.logo():DEFAULT_LOGO;
+    $('#setLogoPreview').src = appSettings.logo;
+    toast('Seçili firmanın varsayılan logosu yüklendi','ok');
+  });
+  // 🏢 Firma değişince antet bilgileri + logo o firmaya döner (Kaydet ile kalıcı)
+  const firmSel=$('#setFirm');
+  if(firmSel) firmSel.addEventListener('change', ()=>{
+    applyFirmDefaults(firmSel.value);
+    toast(firmSel.value==='nappa'?'NAPPA OFFICE (İstanbul) antedi seçildi — Kaydet ile uygula':'SALBA (Konya) antedi seçildi — Kaydet ile uygula','ok',3000);
   });
 }
 
