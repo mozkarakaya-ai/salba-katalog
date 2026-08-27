@@ -919,8 +919,8 @@ let appSettings={
   defVat:10, defDisc:0,
   theme:'light',
   usdRate:0,
-  markup:50,      // liste → satış kâr marjı %
-  defLineDisc:20, // teklif hazırlarken satır başına varsayılan iskonto %
+  markup:50,      // liste → satış kâr marjı % (satış = liste × 1,5)
+  defLineDisc:15, // teklif hazırlarken satır başına varsayılan iskonto %
   terms:'', // boşsa DEFAULT_TERMS basılır
   fbConfig:'', fbEmail:'', // ☁ Firebase bulut eşitleme (şifre asla saklanmaz)
 };
@@ -2329,8 +2329,10 @@ async function nextQuoteNum(){
     }
   }catch(e){}
   const pc=projectCode();
-  return 'TKL-'+y+'-'+String(mx+1).padStart(3,'0')+(pc?'-'+pc:'');
+  // Numara sırası iki firma için ORTAK; sona aktif firmanın etiketi eklenir (TKL-2026-005-XAOK-NAPPA)
+  return 'TKL-'+y+'-'+String(mx+1).padStart(3,'0')+(pc?'-'+pc:'')+'-'+firmTag();
 }
+function firmTag(){ return (appSettings.firm==='nappa')?'NAPPA':'SALBA'; }
 async function fillAutoQuoteNum(force){
   const el=$('#qnum'); if(!el) return;
   if(force || !el.value.trim()) el.value=await nextQuoteNum();
@@ -2890,6 +2892,8 @@ async function loadSettings(){
   if(/543[\s]*824[\s]*58[\s]*34/.test(appSettings.phone||'')) appSettings.phone='+90 506 856 02 45';
   // mobilyada KDV %10 — eski %20 kayıtlarını düzelt
   if(+appSettings.defVat===20) appSettings.defVat=10;
+  // varsayılan satır iskontosu %20 → %15 (kullanıcı kararı 2026-08-27)
+  if(+appSettings.defLineDisc===20) appSettings.defLineDisc=15;
   if(!appSettings.logo) appSettings.logo = DEFAULT_LOGO;
   // NAPPA müşteri sayfası: antet Nappa'ya döner; Instagram kampanya fiyatları NİHAİ olduğundan
   // marj ve KDV eklenmez (grid ilk çizimden önce burada ayarlanır)
@@ -2943,6 +2947,15 @@ async function saveSettings(){
   appSettings = newS;
   await idbPut('settings', {key:'app', value:newS});
   applyLogo();
+  // açık teklifin numarasındaki firma etiketini yeni aktif firmaya çevir (otomatik kalıptaysa)
+  const qn=$('#qnum');
+  if(qn && qn.value.trim()){
+    const stripped=qn.value.trim().replace(/-(SALBA|NAPPA)$/,'');
+    if(/^TKL-\d{4}-\d{3}(-[A-Z0-9]{1,8})?$/.test(stripped)){
+      qn.value=stripped+'-'+firmTag();
+      updateQuoteHeader();
+    }
+  }
   toast('Ayarlar kaydedildi','ok');
   closeModal('settingsModal');
 }
@@ -2961,7 +2974,7 @@ function fillSettingsForm(){
   if($('#fbEmail')) $('#fbEmail').value=appSettings.fbEmail||'';
   $('#setDefDisc').value=appSettings.defDisc||0;
   if($('#setMarkup')) $('#setMarkup').value=(appSettings.markup!=null?appSettings.markup:50);
-  if($('#setDefLineDisc')) $('#setDefLineDisc').value=(appSettings.defLineDisc!=null?appSettings.defLineDisc:20);
+  if($('#setDefLineDisc')) $('#setDefLineDisc').value=(appSettings.defLineDisc!=null?appSettings.defLineDisc:15);
   $('#setLogoPreview').src=appSettings.logo||DEFAULT_LOGO;
 }
 function applyTheme(){
@@ -3461,8 +3474,10 @@ async function boot(){
     // Proje yazılınca otomatik teklif numarasının sonuna proje kodu eklenir (TKL-2026-004-XAVM)
     $('#qproject') && $('#qproject').addEventListener('blur', ()=>{
       const el=$('#qnum'); if(!el) return;
-      const m=/^(TKL-\d{4}-\d{3})(?:-[A-Z0-9]{1,8})?$/.exec(el.value.trim());
-      if(m){ const pc=projectCode(); el.value=m[1]+(pc?'-'+pc:''); }
+      // firma etiketini soy, tabanı yakala, proje kodu + etiketle yeniden kur
+      const stripped=el.value.trim().replace(/-(SALBA|NAPPA)$/,'');
+      const m=/^(TKL-\d{4}-\d{3})(?:-[A-Z0-9]{1,8})?$/.exec(stripped);
+      if(m){ const pc=projectCode(); el.value=m[1]+(pc?'-'+pc:'')+'-'+firmTag(); }
       updateQuoteHeader();
     });
     $('#qnum') && $('#qnum').addEventListener('input', updateQuoteHeader);
