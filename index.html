@@ -1240,7 +1240,7 @@ async function orderViaWhatsApp(){
   const n=cart.filter(c=>c.kind!=='section').length;
   let sub=0; for(const it of cart){ if(it.kind!=='section') sub+=it.qty*it.price*(1-(it.lineDisc||0)/100); }
   const vat=+($('#vat')&&$('#vat').value)||10;
-  const shortTxt='🛒 SALBA Sipariş Talebi — '+cust+'\n'+n+' kalem · TOPLAM (KDV dahil): '+fmt(sub*(1+vat/100))+'\n📎 Sipariş özeti görseli ektedir.';
+  const shortTxt='🛒 '+((appSettings.company||'SALBA').toUpperCase())+' Sipariş Talebi — '+cust+'\n'+n+' kalem · TOPLAM (KDV dahil): '+fmt(sub*(1+vat/100))+'\n📎 Sipariş özeti görseli ektedir.';
   if(blob){
     const file=new File([blob],'salba-siparis.jpg',{type:'image/jpeg'});
     // Mobil: sistem paylaşım menüsü varsa görseli doğrudan paylaştır
@@ -1807,7 +1807,7 @@ function updateCfgSummary(p){
     const price=+(body.querySelector('#simplePrice')||{}).value||0;
     total = qty*price; count=1;
   }
-  $('#cfgSummary').innerHTML = count+' kalem · Ara toplam: <b>'+fmt(total)+'</b> <span style="opacity:.6">(KDV hariç)</span>';
+  $('#cfgSummary').innerHTML = count+' kalem · Ara toplam: <b>'+fmt(total)+'</b> <span style="opacity:.6">'+(FIRM_PAGE==='nappa'?'(KDV dahil)':'(KDV hariç)')+'</span>';
 }
 
 /* ===== Add to cart ===== */
