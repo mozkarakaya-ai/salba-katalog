@@ -2895,6 +2895,21 @@ async function loadSettings(){
   // varsayılan satır iskontosu %20 → %15 (kullanıcı kararı 2026-08-27)
   if(+appSettings.defLineDisc===20) appSettings.defLineDisc=15;
   if(!appSettings.logo) appSettings.logo = DEFAULT_LOGO;
+  // ONARIM: Nappa sayfasının yanlışlıkla ortak depoya kaydettiği geçici ayarları geri al.
+  // Fiyat politikası SABİT: satış = liste × 1,5 · KDV %10 (yalnız nappa.html kendi içinde 0 kullanır)
+  let _healed=false;
+  if(!(+appSettings.markup>0)){ appSettings.markup=50; _healed=true; }
+  if(!(+appSettings.defVat>0)){ appSettings.defVat=10; _healed=true; }
+  const _F=FIRMS[appSettings.firm||'salba'];
+  if(_F && (appSettings.company==='NAPPA OFFICE'||appSettings.company==='SALBA') && appSettings.company!==_F.company){
+    appSettings.company=_F.company; appSettings.slogan=_F.slogan; appSettings.web=_F.web; appSettings.logo=_F.logo();
+    if(['Konya','İstanbul'].includes(String(appSettings.addr||'').trim())) appSettings.addr=_F.city;
+    _healed=true;
+  }
+  if(_healed && !VISITOR){
+    try{ await idbPut('settings',{key:'app',value:appSettings}); }catch(e){}
+    console.warn('Ayarlar onarıldı: marj %50 / KDV %10 geri yüklendi');
+  }
   // NAPPA müşteri sayfası: antet Nappa'ya döner; Instagram kampanya fiyatları NİHAİ olduğundan
   // marj ve KDV eklenmez (grid ilk çizimden önce burada ayarlanır)
   if(VISITOR && FIRM_PAGE==='nappa'){
@@ -3517,7 +3532,9 @@ async function boot(){
         if(r){
           appSettings.usdRate=r;
           const el=$('#usdRate'); if(el) el.value=r;
-          try{ await idbPut('settings',{key:'app',value:appSettings}); }catch(e){}
+          // ZİYARETÇİ sayfaları ayar KAYDETMEZ! (Nappa'nın marj=0 geçici ayarı ortak
+          // depoya yazılıp yönetim panelinin %50 marjını siliyordu — 2026-08-27 hatası)
+          if(!VISITOR){ try{ await idbPut('settings',{key:'app',value:appSettings}); }catch(e){} }
           if(!VISITOR) toast('Güncel USD kuru alındı: '+r+' ₺','info',2500);
         }
       });
