@@ -97,7 +97,7 @@ header .stat-pill{background:var(--surface2);color:var(--brand);border:1px solid
 .cust-suggest .it .m{font-size:11px;color:var(--muted)}
 
 .qitems{flex:1;overflow-y:auto;padding:6px 12px;min-height:40px}
-.qitem{display:grid;grid-template-columns:55px 1fr auto;gap:9px;padding:9px;border:1px solid var(--line);border-radius:7px;margin-bottom:6px;align-items:flex-start;background:var(--surface);transition:border-color .15s}
+.qitem{display:grid;grid-template-columns:18px 55px 1fr auto;gap:9px;padding:9px;border:1px solid var(--line);border-radius:7px;margin-bottom:6px;align-items:flex-start;background:var(--surface);transition:border-color .15s}
 .qitem:hover{border-color:var(--brand2)}
 .qitem img{width:55px;height:55px;object-fit:contain;background:#fff;border-radius:5px;border:1px solid var(--line);cursor:pointer}
 .qitem .t{font-size:12.5px;font-weight:600;margin-bottom:2px;line-height:1.25;color:var(--ink);cursor:text;border-bottom:1px dashed transparent;display:inline-block;padding:0 2px}
@@ -263,7 +263,13 @@ header .stat-pill{background:var(--surface2);color:var(--brand);border:1px solid
 
 .qitem .line-actions{display:flex;gap:4px;align-items:center;margin-top:3px;font-size:10.5px;color:var(--muted)}
 .qitem .line-disc{width:42px;text-align:right;border:1px solid var(--line2);border-radius:4px;padding:2px 4px;font-size:10.5px;background:var(--surface);color:var(--ink)}
-.qitem .line-desc{width:100%;box-sizing:border-box;font:inherit;font-size:11px;border:1px dashed var(--brand2);border-radius:6px;padding:5px 7px;margin-top:4px;background:var(--surface);color:var(--ink);resize:vertical}
+.qitem .dragh{cursor:grab;color:var(--muted);font-size:16px;line-height:1;padding:2px 4px;user-select:none;touch-action:none;align-self:center}
+.dragh:active{cursor:grabbing}
+.qitem.dragging,.cart-section.dragging{opacity:.35}
+.drag-ghost{position:fixed;pointer-events:none;opacity:.85;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.25);background:var(--surface)}
+.qitem.drop-before,.cart-section.drop-before{box-shadow:0 -3px 0 0 var(--brand2)}
+.qitem.drop-after,.cart-section.drop-after{box-shadow:0 3px 0 0 var(--brand2)}
+.line-desc{width:100%;box-sizing:border-box;font:inherit;font-size:11px;border:1px dashed var(--brand2);border-radius:6px;padding:5px 7px;margin-top:4px;background:var(--surface);color:var(--ink);resize:vertical}
 .line-note{width:100%;border:1px solid var(--line2);border-radius:4px;padding:3px 6px;font-size:10.5px;margin-top:3px;background:var(--surface);color:var(--ink);font-family:inherit;resize:vertical;min-height:20px}
 .qitem.has-note .line-actions::after{content:'📝';font-size:11px;opacity:.5}
 .qitem .toggle-note{background:transparent;border:1px solid var(--line2);border-radius:3px;padding:1px 6px;font-size:10px;cursor:pointer;color:var(--muted)}
@@ -342,7 +348,7 @@ kbd{background:var(--surface2);border:1px solid var(--line2);border-radius:3px;p
 #miniCart .mc-sub{font-size:11px;opacity:.85}
 #miniCart .mc-go{background:#fff;color:var(--brand);border:0;border-radius:8px;padding:8px 14px;font-weight:800;font-size:12.5px;cursor:pointer}
 /* Geniş sepet ekranı */
-#view-2 .qitem{grid-template-columns:76px 1fr 210px;padding:12px;margin-bottom:8px}
+#view-2 .qitem{grid-template-columns:18px 76px 1fr 210px;padding:12px;margin-bottom:8px}
 #view-2 .qitem img{width:76px;height:76px}
 #view-2 .qitem .t{font-size:14px}
 #view-2 .qitem .lt{font-size:15px;min-width:150px;white-space:nowrap}
@@ -394,7 +400,7 @@ kbd{background:var(--surface2);border:1px solid var(--line2);border-radius:3px;p
   .lightbox .lb-img .lb-arrow{width:42px;height:42px}
   .lightbox .lb-nav img{width:46px;height:46px}
   /* Sepet satırı: sağ sütun alta iner, tuşlar büyür — ekle/çıkar parmağa uygun */
-  #view-2 .qitem{grid-template-columns:60px 1fr;padding:10px;gap:8px}
+  #view-2 .qitem{grid-template-columns:18px 60px 1fr;padding:10px;gap:8px}
   #view-2 .qitem img{width:60px;height:60px}
   #view-2 .qitem>div:last-child{grid-column:1/-1;flex-direction:row!important;justify-content:space-between;align-items:center;border-top:1px dashed var(--line);padding-top:8px;margin-top:2px}
   #view-2 .qitem .lt{min-width:0}
@@ -494,6 +500,7 @@ kbd{background:var(--surface2);border:1px solid var(--line2);border-radius:3px;p
         <div><label>Genel İskonto %</label><input id="disc" type="number" value="0" min="0" max="100" step="0.01"></div>
         <div><label>Genel İskonto Tutarı</label><input id="discAmt" type="number" min="0" step="0.01" placeholder="0,00" title="Tutar girin — oran otomatik hesaplanır"></div>
         <div><label>İskontolu Ara Toplam (KDV hariç)</label><input id="discNet" type="number" min="0" step="0.01" placeholder="0,00" title="Hedef KDV hariç tutarı girin — oran otomatik hesaplanır"></div>
+        <div style="grid-column:1/-1;display:flex;align-items:center;gap:6px"><input id="discSpread" type="checkbox" style="width:auto"><label for="discSpread" style="margin:0;text-transform:none;font-size:11.5px;cursor:pointer">Genel iskontoyu satırlara yansıt (çıktıda %satır + %genel; tek "Toplam İskonto")</label></div>
         <div><label>KDV %</label><input id="vat" type="number" value="10" min="0" max="100"></div>
       </div>
       <div class="totals">
@@ -776,6 +783,7 @@ kbd{background:var(--surface2);border:1px solid var(--line2);border-radius:3px;p
       <div class="settings-grid">
         <label class="field"><span>Varsayılan KDV %</span><input id="setDefVat" type="number" min="0" max="100"></label>
         <label class="field"><span>Genel İskonto % (varsayılan)</span><input id="setDefDisc" type="number" min="0" max="100"></label>
+        <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input id="setDefDiscSpread" type="checkbox" style="width:auto"><span>Yeni tekliflerde genel iskontoyu satırlara yansıt</span></label>
         <label class="field"><span>Kâr Marjı % (liste → satış)</span><input id="setMarkup" type="number" min="0" max="500" title="Tedarikçi liste fiyatının üzerine eklenen zam. Satış fiyatı = liste × (1 + marj)"></label>
         <label class="field"><span>Teklif Satır İskontosu % (varsayılan)</span><input id="setDefLineDisc" type="number" min="0" max="100" title="Teklif hazırlarken her satıra otomatik uygulanan iskonto"></label>
       </div>
@@ -923,7 +931,7 @@ let appSettings={
   preparer:'',
   addr:'Konya', web:'www.salba.com.tr',
   logo: DEFAULT_LOGO,
-  defVat:10, defDisc:0,
+  defVat:10, defDisc:0, defDiscSpread:false, // genel iskonto satırlara yansıtılsın mı (yeni teklif varsayılanı)
   theme:'light',
   usdRate:0,
   markup:50,      // liste → satış kâr marjı % (satış = liste × 1,5)
@@ -1282,7 +1290,7 @@ function applyVisitorMode(){
     const el=document.getElementById(id); if(el) el.style.display='none';
   });
   // İskonto ve USD kuru alanlarını gizle (liste fiyatı geçerli)
-  ['disc','discAmt','discNet','usdRate'].forEach(id=>{
+  ['disc','discAmt','discNet','discSpread','usdRate'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){const box=el.closest('div'); const outer=box&&box.parentElement&&box.parentElement.tagName==='DIV'&&box.parentElement.querySelector('label')?box.parentElement:box; if(outer)outer.style.display='none';}
   });
@@ -2015,6 +2023,63 @@ function addMatrixRow(i){
 }
 
 /* ===== Bölüm (mahal) taşıma & ara toplamları ===== */
+/* ===== ⠿ Sürükle-bırak (sepet satırları ve bölümler; bölüm altındakilerle birlikte taşınır) ===== */
+function cartBlocks(){
+  const blocks=[]; let cur={sec:null, items:[]};
+  for(const it of cart){ if(it.kind==='section'){ blocks.push(cur); cur={sec:it, items:[]}; } else cur.items.push(it); }
+  blocks.push(cur); return blocks;
+}
+function dropReorder(srcCid, dstCid, before){
+  const src=cart.find(x=>x.cid===srcCid); if(!src||srcCid===dstCid) return;
+  if(src.kind!=='section'){
+    cart=cart.filter(x=>x.cid!==srcCid);
+    let j=cart.findIndex(x=>x.cid===dstCid); if(j<0) return;
+    const dst=cart[j];
+    if(!before){ if(dst.kind==='section'){ /* bölüm başlığının hemen altına */ j=j+1; } else j=j+1; }
+    cart.splice(j,0,src);
+  } else {
+    const blocks=cartBlocks();
+    const si=blocks.findIndex(b=>b.sec&&b.sec.cid===srcCid); if(si<0) return;
+    const [blk]=blocks.splice(si,1);
+    let di=blocks.findIndex(b=>(b.sec&&b.sec.cid===dstCid)||b.items.some(x=>x.cid===dstCid)); if(di<0) return;
+    const dstIsSec=blocks[di].sec&&blocks[di].sec.cid===dstCid;
+    let j=(dstIsSec&&before)?di:di+1; if(j<1) j=1;   // 0. blok (bölümsüz baş kısım) hep önde kalır
+    blocks.splice(j,0,blk);
+    cart=[]; for(const b of blocks){ if(b.sec) cart.push(b.sec); cart.push(...b.items); }
+  }
+  renderCart();
+}
+function wireDrag(el, cid){
+  const h=document.createElement('span'); h.className='dragh'; h.textContent='⠿'; h.title='Sürükleyip taşı';
+  el.insertBefore(h, el.firstChild);
+  h.addEventListener('pointerdown', ev=>{
+    if(ev.button!==0 && ev.pointerType==='mouse') return;
+    ev.preventDefault();
+    const wrap=$('#qitems'); const rect0=el.getBoundingClientRect();
+    const ghost=el.cloneNode(true); ghost.className+=' drag-ghost'; ghost.style.width=rect0.width+'px'; document.body.appendChild(ghost);
+    el.classList.add('dragging');
+    let target=null, before=true;
+    const move=(e)=>{
+      ghost.style.left=(e.clientX-20)+'px'; ghost.style.top=(e.clientY-rect0.height/2)+'px';
+      wrap.querySelectorAll('.drop-before,.drop-after').forEach(x=>x.classList.remove('drop-before','drop-after'));
+      const under=document.elementFromPoint(e.clientX,e.clientY);
+      const row=under && under.closest && under.closest('.qitem,.cart-section');
+      if(row && row!==el && wrap.contains(row)){
+        const r=row.getBoundingClientRect(); before=(e.clientY < r.top+r.height/2);
+        row.classList.add(before?'drop-before':'drop-after'); target=row;
+      } else target=null;
+      // kenara gelince otomatik kaydır
+      if(e.clientY<60) window.scrollBy(0,-12); else if(e.clientY>window.innerHeight-60) window.scrollBy(0,12);
+    };
+    const up=()=>{
+      document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); document.removeEventListener('pointercancel',up);
+      ghost.remove(); el.classList.remove('dragging');
+      wrap.querySelectorAll('.drop-before,.drop-after').forEach(x=>x.classList.remove('drop-before','drop-after'));
+      if(target) dropReorder(cid, +target.dataset.cid, before);
+    };
+    document.addEventListener('pointermove',move); document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up);
+  });
+}
 function moveSectionBlock(cid, dir){
   // bölüm + altındaki ürünler tek blok olarak taşınır
   const blocks=[]; let cur={sec:null, items:[]};
@@ -2078,6 +2143,7 @@ function renderCart(){
       inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
       inp.addEventListener('click',e=>e.stopPropagation());
       sec.querySelectorAll('.mv').forEach(b=>b.addEventListener('click',()=>moveSectionBlock(it.cid,+b.dataset.dir)));
+      wireDrag(sec, it.cid);
       sec.querySelector('.rm').addEventListener('click',()=>{cart=cart.filter(x=>x.cid!==it.cid);renderCart();});
       wrap.appendChild(sec);
       if(it.autoFocus){delete it.autoFocus; setTimeout(()=>inp.focus(),50);}
@@ -2135,6 +2201,7 @@ function renderCart(){
         '</div>'+
         '<button class="rm" title="Kaldır" type="button">×</button></div>';
     row.querySelectorAll('.mvi').forEach(b=>b.addEventListener('click',()=>moveCartItem(it.cid,+b.dataset.dir)));
+    wireDrag(row, it.cid);
     const de=row.querySelector('.desc-edit'); if(de) de.addEventListener('click',e=>{e.preventDefault(); it.descText=autoDescLines(it).join('\n'); renderCart(); const ta=wrap.querySelector('.qitem[data-cid="'+it.cid+'"] .line-desc'); if(ta) ta.focus();});
     const dr=row.querySelector('.desc-reset'); if(dr) dr.addEventListener('click',e=>{e.preventDefault(); delete it.descText; renderCart();});
     const dta=row.querySelector('.line-desc'); if(dta) dta.addEventListener('input',()=>{ it.descText=dta.value; });
@@ -2445,6 +2512,7 @@ async function saveQuote(){
     project: ($('#qproject')&&$('#qproject').value.trim())||'',
     notes: $('#qnotes').value||'',
     disc: +$('#disc').value||0,
+    discSpread: !!($('#discSpread')&&$('#discSpread').checked),
     vat:  +$('#vat').value||20,
     cart: cart.slice(),
     customer: {id:custId, name:custName||'(isimsiz)', company:$('#custCompany').value.trim(), phone:$('#custPhone').value.trim(), email:$('#custEmail').value.trim()},
@@ -2470,7 +2538,7 @@ async function loadQuote(id){
   currentQuoteId=id;
   $('#qnum').value=q.num; $('#qdate').value=q.date; $('#qvalid').value=q.validity||'';
   if($('#qproject')) $('#qproject').value=q.project||'';
-  $('#qnotes').value=q.notes||''; $('#disc').value=q.disc; $('#vat').value=q.vat;
+  $('#qnotes').value=q.notes||''; $('#disc').value=q.disc; $('#vat').value=q.vat; if($('#discSpread')) $('#discSpread').checked=!!q.discSpread;
   currentStatus = q.status||'draft';
   currentCurrency = q.currency||'TRY';
   const stSel = $('#qStatus'); if(stSel){stSel.value=currentStatus; stSel.setAttribute('data-st',currentStatus);}
@@ -2565,7 +2633,7 @@ function newQuote(force){
   $('#qnum').value='';$('#cust').value='';$('#custCompany').value='';
   $('#custPhone').value='';$('#custEmail').value='';$('#qnotes').value='';$('#qvalid').value='';
   if($('#qproject')) $('#qproject').value='';
-  $('#disc').value=appSettings.defDisc; $('#vat').value=appSettings.defVat;
+  $('#disc').value=appSettings.defDisc; $('#vat').value=appSettings.defVat; if($('#discSpread')) $('#discSpread').checked=!!appSettings.defDiscSpread;
   const stSel=$('#qStatus'); if(stSel){stSel.value='draft';stSel.setAttribute('data-st','draft');}
   const cSel=$('#qcurrency'); if(cSel) cSel.value=currentCurrency;
   $('#qTitle').textContent='Yeni Teklif';
@@ -2590,8 +2658,11 @@ async function buildPrintHTML(){
   const disc=+$('#disc').value||0, vat=+$('#vat').value||0;
   const cur=currentCurrency||'TRY';
   const custName=$('#cust').value||'—', custCo=$('#custCompany').value, custPh=$('#custPhone').value;
-  const hasDisc = cart.some(c=>c.kind!=='section' && (c.lineDisc||0)>0);
+  const spread = !!($('#discSpread')&&$('#discSpread').checked) && disc>0;   // genel iskonto satırlara yansıtılsın
+  const hasDisc = spread || cart.some(c=>c.kind!=='section' && (c.lineDisc||0)>0);
   const nCols = hasDisc ? 7 : 6;
+  const gF = spread ? (1-disc/100) : 1;   // satır rakamlarına uygulanan genel iskonto çarpanı
+  const STK='<s style="color:#b8bcc4;font-weight:400;font-size:.78em;text-decoration-thickness:0.6px;text-decoration-color:#c8ccd3">';
   let sub=0, brut=0, rows=[]; let rowNo=0;
   // bölüm (mahal) ara toplamı takibi
   let secTitle=null, secSum=0, secN=0;
@@ -2617,8 +2688,11 @@ async function buildPrintHTML(){
     const src=cached?(await getBlobURL(it.img)||it.img):(it.img||'');
     const ld = it.lineDisc||0;
     const lineGross = it.qty*it.price;
-    const lineNet = lineGross*(1-ld/100);
-    brut+=lineGross; sub+=lineNet;
+    const lineNet0 = lineGross*(1-ld/100);          // yalnız satır iskontosu (alt toplam hesabı için)
+    const f = (1-ld/100)*gF;                          // çıktıda gösterilen satır çarpanı
+    const lineNet = lineGross*f;
+    const anyDisc = ld>0 || spread;
+    brut+=lineGross; sub+=lineNet0;
     if(secTitle!=null){ secSum+=lineNet; secN++; }
     let opts='';
     if(it.descText!=null){
@@ -2638,15 +2712,16 @@ async function buildPrintHTML(){
     const hasRate=(+appSettings.usdRate>0);
     let birimCell, tutarCell;
     if(it.usdSell){
-      birimCell=(ld>0?'<s style="color:#999;font-weight:400;font-size:.85em">'+nUS(it.usdSell)+'</s><br>':'')+
-                '<b>'+nUS(it.usdSell*(1-ld/100))+'</b><br><small style="color:#666">'+(hasRate?fmt(it.price*(1-ld/100),cur):'₺ karşılığı için kur girin')+'</small>';
-      const netUsd=it.usdSell*it.qty*(1-ld/100);
-      tutarCell=(ld>0?'<s style="color:#999;font-weight:400;font-size:.85em">'+nUS(it.usdSell*it.qty)+'</s><br>':'')+
+      birimCell=(anyDisc?STK+nUS(it.usdSell)+'</s><br>':'')+
+                '<b>'+nUS(it.usdSell*f)+'</b><br><small style="color:#666">'+(hasRate?fmt(it.price*f,cur):'₺ karşılığı için kur girin')+'</small>';
+      const netUsd=it.usdSell*it.qty*f;
+      tutarCell=(anyDisc?STK+nUS(it.usdSell*it.qty)+'</s><br>':'')+
                 '<b>'+nUS(netUsd)+'</b><br><small style="color:#666">'+(hasRate?fmt(lineNet,cur):'')+'</small>';
     } else {
-      birimCell=(ld>0?'<s style="color:#999;font-weight:400;font-size:.85em">'+fmt(it.price,cur)+'</s><br>':'')+'<b>'+fmt(it.price*(1-ld/100),cur)+'</b>';
-      tutarCell=(ld>0?'<s style="color:#999;font-weight:400;font-size:.85em">'+fmt(it.price*it.qty,cur)+'</s><br>':'')+'<b>'+fmt(lineNet,cur)+'</b>';
+      birimCell=(anyDisc?STK+fmt(it.price,cur)+'</s><br>':'')+'<b>'+fmt(it.price*f,cur)+'</b>';
+      tutarCell=(anyDisc?STK+fmt(it.price*it.qty,cur)+'</s><br>':'')+'<b>'+fmt(lineNet,cur)+'</b>';
     }
+    const iskParts=[]; if(ld>0) iskParts.push('%'+pct(ld)); if(spread) iskParts.push('%'+pct(disc));
     rows.push('<tr>'+
       '<td>'+rowNo+'</td>'+
       '<td>'+(src?'<img src="'+esc(src)+'" alt="" referrerpolicy="no-referrer">':'')+'</td>'+
@@ -2655,8 +2730,8 @@ async function buildPrintHTML(){
       '<td style="text-align:center">'+it.qty+'</td>'+
       '<td style="text-align:right;white-space:nowrap">'+birimCell+'</td>'+
       (hasDisc?'<td style="text-align:center;color:#dc2626;font-weight:700;white-space:nowrap">'+
-        (ld>0
-          ? '%'+ld+'<br><small>-'+(it.usdSell?nUS(it.usdSell*it.qty*ld/100):fmt(lineGross*ld/100,cur))+'</small>'
+        (iskParts.length
+          ? iskParts.join(' + ')+'<br><small style="font-weight:400">-'+(it.usdSell?nUS(it.usdSell*it.qty*(1-f)):fmt(lineGross*(1-f),cur))+'</small>'
           : '—')+'</td>':'')+
       '<td style="text-align:right;white-space:nowrap">'+tutarCell+'</td></tr>');
   }
@@ -2686,8 +2761,10 @@ async function buildPrintHTML(){
     '<table><thead><tr><th style="width:26px">#</th><th style="width:64px">Görsel</th><th>Ürün / Açıklama</th><th style="width:42px">Adet</th><th style="width:110px;text-align:right">Birim Fiyat</th>'+(hasDisc?'<th style="width:72px;text-align:center">İskonto</th>':'')+'<th style="width:115px;text-align:right">Tutar</th></tr></thead><tbody>'+rows.join('')+'</tbody></table>'+
     '<div style="display:flex"><div style="flex:1"></div><div class="tot">'+
       '<div class="l"><span>Ara Toplam</span><span>'+fmt(brut)+usdEqPrint(brut)+'</span></div>'+
-      (brut-sub>0.005?'<div class="l"><span>Satır İskontoları</span><span style="color:#dc2626">-'+fmt(brut-sub)+'</span></div>':'')+
-      (disc?'<div class="l"><span>Genel İskonto ('+pct(disc)+'%)</span><span style="color:#dc2626">-'+fmt(sub-after)+'</span></div>':'')+
+      (spread
+        ? (brut-after>0.005?'<div class="l"><span>Toplam İskonto</span><span style="color:#dc2626">-'+fmt(brut-after)+'</span></div>':'')
+        : (brut-sub>0.005?'<div class="l"><span>Satır İskontoları</span><span style="color:#dc2626">-'+fmt(brut-sub)+'</span></div>':'')+
+          (disc?'<div class="l"><span>Genel İskonto (%'+pct(disc)+')</span><span style="color:#dc2626">-'+fmt(sub-after)+'</span></div>':''))+
       (brut-after>0.005?'<div class="l" style="border-top:1px solid #e5eaf2"><span>İskontolu Ara Toplam</span><span>'+fmt(after)+'</span></div>':'')+
       '<div class="l"><span>KDV ('+vat+'%)</span><span>'+fmt(after*vat/100)+'</span></div>'+
       '<div class="l grand"><span>GENEL TOPLAM</span><span>'+fmt(total)+usdEqPrint(total)+'</span></div>'+
@@ -3025,7 +3102,7 @@ async function saveSettings(){
     phone:$('#setCompPhone').value, email:$('#setCompEmail').value,
     addr:$('#setCompAddr').value, web:$('#setCompWeb').value,
     preparer:$('#setCompPreparer').value,
-    defVat:+$('#setDefVat').value||10, defDisc:+$('#setDefDisc').value||0,
+    defVat:+$('#setDefVat').value||10, defDisc:+$('#setDefDisc').value||0, defDiscSpread:!!($('#setDefDiscSpread')&&$('#setDefDiscSpread').checked),
     terms: $('#setTerms') ? $('#setTerms').value : (appSettings.terms||''),
     fbConfig: $('#fbConfig') ? $('#fbConfig').value : (appSettings.fbConfig||''),
     fbEmail: $('#fbEmail') ? $('#fbEmail').value.trim() : (appSettings.fbEmail||''),
@@ -3063,7 +3140,7 @@ function fillSettingsForm(){
   if($('#setTerms')) $('#setTerms').value=(appSettings.terms&&appSettings.terms.trim())?appSettings.terms:DEFAULT_TERMS;
   if($('#fbConfig')) $('#fbConfig').value=appSettings.fbConfig||'';
   if($('#fbEmail')) $('#fbEmail').value=appSettings.fbEmail||'';
-  $('#setDefDisc').value=appSettings.defDisc||0;
+  $('#setDefDisc').value=appSettings.defDisc||0; if($('#setDefDiscSpread')) $('#setDefDiscSpread').checked=!!appSettings.defDiscSpread;
   if($('#setMarkup')) $('#setMarkup').value=(appSettings.markup!=null?appSettings.markup:50);
   if($('#setDefLineDisc')) $('#setDefLineDisc').value=(appSettings.defLineDisc!=null?appSettings.defLineDisc:15);
   $('#setLogoPreview').src=appSettings.logo||DEFAULT_LOGO;
@@ -3112,6 +3189,7 @@ async function exportAll(){
     customers: await idbAll('customers'),
     quotes:    await idbAll('quotes'),
     settings:  await idbAll('settings'),
+    prodimg:   await idbAll('prodimg'),   // 📌 ürüne kalıcı kaydedilen fotoğraflar (Claude bu dosyadan kaynağa gömer)
   };
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], {type:'application/json'});
@@ -3132,7 +3210,8 @@ async function importAll(file){
     if(data.customers) for(const c of data.customers) await idbPut('customers', c);
     if(data.quotes)    for(const q of data.quotes)    await idbPut('quotes', q);
     if(data.settings)  for(const s of data.settings)  await idbPut('settings', s);
-    await refreshCustomersCache(); await loadSettings();
+    if(data.prodimg)   for(const r of data.prodimg)   { delete r.id; await idbPut('prodimg', r); }
+    await refreshCustomersCache(); await loadSettings(); if(await applyProdImgs()){ renderGrid(); }
     toast('İçe aktarıldı: '+((data.customers&&data.customers.length)||0)+' müşteri, '+((data.quotes&&data.quotes.length)||0)+' teklif','ok',3500);
   } catch(e){toast('Hata: '+e.message,'err',4000);}
 }
@@ -3260,7 +3339,7 @@ async function exportCartXLSX(){
   const meta=[['Teklif No',num],['Tarih',date],['Müşteri',custName+(custCo?' · '+custCo:'')]]; if(proj) meta.push(['Proje',proj]);
   for(const [k,v] of meta){ ws.getCell(r,1).value=k; ws.getCell(r,1).font={bold:true}; ws.mergeCells(r,2,r,7); ws.getCell(r,2).value=v; r++; }
   r++;
-  const hasDisc=cart.some(c=>c.kind!=='section'&&(c.lineDisc||0)>0);
+  const gdisc=+$('#disc').value||0, spread=!!($('#discSpread')&&$('#discSpread').checked)&&gdisc>0, gF=spread?(1-gdisc/100):1;
   const H=['#','Görsel','Ürün / Açıklama','Adet','Birim Fiyat','İskonto','Tutar'];
   H.forEach((h,i)=>{ const c=ws.getCell(r,i+1); c.value=h; c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:B}}; c.alignment={vertical:'middle',horizontal:i>=3?'center':'left'}; });
   ws.getRow(r).height=20; const headRow=r; r++;
@@ -3271,7 +3350,8 @@ async function exportCartXLSX(){
       ws.mergeCells(r,1,r,7); const c=ws.getCell(r,1); c.value='📂 '+(it.title||'Bölüm'); c.font={bold:true,color:{argb:B}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEEF3FB'}}; ws.getRow(r).height=18; r++; continue;
     }
     no++;
-    const ld=it.lineDisc||0, gross=it.qty*it.price, net=gross*(1-ld/100); brut+=gross; sub+=net;
+    const ld=it.lineDisc||0, gross=it.qty*it.price, f=(1-ld/100)*gF, net=gross*f, net0=gross*(1-ld/100); brut+=gross; sub+=net0;
+    const anyD=ld>0||spread; const iskTxt=[ld>0?'%'+pct(ld):null, spread?'%'+pct(gdisc):null].filter(Boolean).join(' + ');
     const lines=descLines(it); const noteTxt=(it.note||'').trim();
     const rich=[{text:it.t,font:{bold:true,size:11}}];
     if(lines.length) rich.push({text:'\n'+lines.join('\n'),font:{size:9,color:{argb:'FF555555'}}});
@@ -3279,11 +3359,11 @@ async function exportCartXLSX(){
     ws.getCell(r,1).value=no;
     ws.getCell(r,3).value={richText:rich};
     ws.getCell(r,4).value=it.qty;
-    ws.getCell(r,5).value=ld>0?{richText:[{text:fmt(it.price,cur)+'\n',font:{size:9,strike:true,color:{argb:'FF999999'}}},{text:fmt(it.price*(1-ld/100),cur),font:{bold:true}}]}:it.price;
-    if(ld<=0) ws.getCell(r,5).numFmt=numFmt;
-    ws.getCell(r,6).value=ld>0?'%'+ld+'\n-'+fmt(gross*ld/100,cur):'—'; if(ld>0) ws.getCell(r,6).font={color:{argb:'FFDC2626'},bold:true};
-    ws.getCell(r,7).value=ld>0?{richText:[{text:fmt(gross,cur)+'\n',font:{size:9,strike:true,color:{argb:'FF999999'}}},{text:fmt(net,cur),font:{bold:true}}]}:net;
-    if(ld<=0) ws.getCell(r,7).numFmt=numFmt; ws.getCell(r,7).font={bold:true};
+    ws.getCell(r,5).value=anyD?{richText:[{text:fmt(it.price,cur)+'\n',font:{size:8,strike:true,color:{argb:'FFB8BCC4'}}},{text:fmt(it.price*f,cur),font:{bold:true}}]}:it.price;
+    if(!anyD) ws.getCell(r,5).numFmt=numFmt;
+    ws.getCell(r,6).value=anyD?iskTxt+'\n-'+fmt(gross*(1-f),cur):'—'; if(anyD) ws.getCell(r,6).font={color:{argb:'FFDC2626'},bold:true};
+    ws.getCell(r,7).value=anyD?{richText:[{text:fmt(gross,cur)+'\n',font:{size:8,strike:true,color:{argb:'FFB8BCC4'}}},{text:fmt(net,cur),font:{bold:true}}]}:net;
+    if(!anyD) ws.getCell(r,7).numFmt=numFmt; ws.getCell(r,7).font={bold:true};
     const nl=1+lines.length+(noteTxt?1:0);
     ws.getRow(r).height=Math.max(64, 14*nl+6);
     for(let c=1;c<=7;c++){ const cell=ws.getCell(r,c); cell.alignment={vertical:'top',wrapText:true,horizontal:(c===1||c===4||c===6)?'center':(c>=5?'right':'left')}; cell.border={bottom:thin}; }
@@ -3296,8 +3376,8 @@ async function exportCartXLSX(){
   const disc=+$('#disc').value||0, vat=+$('#vat').value||0, after=sub*(1-disc/100), total=after*(1+vat/100);
   r++;
   const T=[['Ara Toplam',brut]];
-  if(brut-sub>0.005) T.push(['Satır İskontoları',-(brut-sub)]);
-  if(disc) T.push(['Genel İskonto ('+pct(disc)+'%)',-(sub-after)]);
+  if(spread){ if(brut-after>0.005) T.push(['Toplam İskonto',-(brut-after)]); }
+  else { if(brut-sub>0.005) T.push(['Satır İskontoları',-(brut-sub)]); if(disc) T.push(['Genel İskonto (%'+pct(disc)+')',-(sub-after)]); }
   if(brut-after>0.005) T.push(['İskontolu Ara Toplam (KDV hariç)',after]);
   T.push(['KDV ('+vat+'%)',after*vat/100]); T.push(['GENEL TOPLAM',total]);
   for(const [k,v] of T){ ws.mergeCells(r,5,r,6); const a=ws.getCell(r,5), b=ws.getCell(r,7); a.value=k; b.value=v; b.numFmt=numFmt; a.alignment={horizontal:'right'}; b.alignment={horizontal:'right'};
@@ -3532,7 +3612,7 @@ async function boot(){
     renderGrid(); renderCart();
     cloudBoot();   // ☁ kayıtlı bulut oturumu varsa sessizce bağlan + eşitle
     $('#qdate').value=new Date().toISOString().slice(0,10);
-    $('#disc').value=appSettings.defDisc;
+    $('#disc').value=appSettings.defDisc; if($('#discSpread')) $('#discSpread').checked=!!appSettings.defDiscSpread;
     $('#vat').value=appSettings.defVat;
     if(!VISITOR) fillAutoQuoteNum(false);
 
